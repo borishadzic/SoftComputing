@@ -66,7 +66,7 @@ def prepare_for_ann(img_bin, number):
     extra = 7
     img_number = img_bin[p1[1] - extra : p2[1] + extra, 
                          p1[0] - extra : p2[0] + extra]  
-    img_number = cv2.GaussianBlur(img_number, (5, 5), 0)
+    img_number = cv2.GaussianBlur(img_number, (5, 5), 1)
 
     # u slucaju da u okolnih sedam piksela uhvati deo drugog broja
     # promeni okolnih sedam piksela na crnu boju

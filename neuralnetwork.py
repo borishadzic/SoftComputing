@@ -36,10 +36,6 @@ model.add(Dense(512))
 model.add(Activation('relu'))
 model.add(Dropout(0.2))
 
-model.add(Dense(512))
-model.add(Activation('relu'))
-model.add(Dropout(0.2))
-
 model.add(Dense(10))
 model.add(Activation('softmax'))
 
@@ -47,8 +43,8 @@ model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='
 
 # training the model and saving metrics in history
 history = model.fit(X_train, Y_train,
-          batch_size=128, epochs=30,
-          verbose=2,
-          validation_data=(X_test, Y_test))
+                    batch_size=128, epochs=8,
+                    verbose=2,
+                    validation_data=(X_test, Y_test))
 
-model.save('model.h5')
+model.save('model4.h5')

@@ -68,6 +68,13 @@ def prepare_for_ann(img_bin, number):
                          p1[0] - extra : p2[0] + extra]  
     img_number = cv2.GaussianBlur(img_number, (5, 5), 0)
 
+    # u slucaju da u okolnih sedam piksela uhvati deo drugog broja
+    # promeni okolnih sedam piksela na crnu boju
+    img_number[0:7] = 0
+    img_number[:,0:7] = 0
+    img_number[0:7:-1] = 0
+    img_number[:,0:7:-1] = 0
+
     # pretvori ga u oblik pogodan za predikciju u neuronskoj mrezi
     resized = cv2.resize(img_number, (28, 28), interpolation = cv2.INTER_NEAREST)
     scale = resized / 255
@@ -176,5 +183,5 @@ def main(model, video_src, canPause = False):
     return sum_blue - sum_green
 
 if __name__ == '__main__':
-    model = models.load_model('model2.h5')
-    main(model, 'Video/video-0.avi', True)
+    model = models.load_model('model3.h5')
+    main(model, 'Video/video-2.avi', True)

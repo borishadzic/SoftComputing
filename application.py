@@ -8,6 +8,10 @@ from vector import distance
 from trackednumber import TrackedNumber
 
 def findClosest(number, prevNumbers):
+    """
+    Pronalazi prethodni element iz niza koji odgovara 
+    prosledjenom broju.
+    """
     for prevNumber in prevNumbers:
         dist = distance(number.get_bottom_right(), 
                         prevNumber.get_bottom_right())

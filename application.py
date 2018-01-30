@@ -1,25 +1,32 @@
-import numpy as np
 import cv2
 import math
+import numpy as np
 
-from lines import get_lines, draw_lines, Line
 from keras import models
-from vector import distance
+from scipy.spatial import distance
 from trackednumber import TrackedNumber
+from lines import get_lines, draw_lines, Line
 
 def findClosest(number, prevNumbers):
     """
-    Pronalazi prethodni element iz niza koji odgovara 
+    Pronalazi prethodni element iz niza koji najbolje odgovara
     prosledjenom broju.
     """
+    closeNumbers = []
+
     for prevNumber in prevNumbers:
-        dist = distance(number.get_bottom_right(), 
-                        prevNumber.get_bottom_right())
+        dist = distance.euclidean(number.get_bottom_right(), 
+                                  prevNumber.get_bottom_right())
 
         if dist < 20:
-            return prevNumber
-            
-    return None
+            closeNumbers.append([dist, prevNumber])
+
+    closeNumbers = sorted(closeNumbers, key=lambda x: x[0])   
+
+    if len(closeNumbers) > 0:
+        return closeNumbers[0][1]
+    else:
+        return None
 
 def update_tracked_numbers(img_bin, trackedNumbers):
     """
@@ -56,7 +63,6 @@ def prepare_for_ann(img_bin, number):
     Iseceni deo slike na kojoj se trazeni broj se kasnije pretvara u oblik
     pogodan za predikciju u neuronskoj mrezi
     """
-
     # uzmi koordinate gornjeg levog i donjeg desnog coska konture
     p1 = number.get_top_left()
     p2 = number.get_bottom_right()
@@ -65,23 +71,28 @@ def prepare_for_ann(img_bin, number):
     # i jos 7 piksela sa svih strana slike
     extra = 7
     img_number = img_bin[p1[1] - extra : p2[1] + extra, 
-                         p1[0] - extra : p2[0] + extra]  
-    img_number = cv2.GaussianBlur(img_number, (5, 5), 1)
+                         p1[0] - extra - 1 : p2[0] + extra + 1]  
 
     # u slucaju da u okolnih sedam piksela uhvati deo drugog broja
     # promeni okolnih sedam piksela na crnu boju
-    img_number[0:7] = 0
-    img_number[:,0:7] = 0
-    img_number[0:7:-1] = 0
-    img_number[:,0:7:-1] = 0
+    rows, cols = img_number.shape
+
+    img_number[0: extra] = 0
+    img_number[rows - extra: rows] = 0
+    img_number[:, 0: extra] = 0
+    img_number[:, cols-extra: cols] = 0
+
+    img_number = cv2.GaussianBlur(img_number, (3, 3), 1)
+
+    # cv2.imshow('Predicting', img_number)
+    # cv2.waitKey(0)
 
     # pretvori ga u oblik pogodan za predikciju u neuronskoj mrezi
     resized = cv2.resize(img_number, (28, 28), interpolation = cv2.INTER_NEAREST)
-    scale = resized / 255
-    mVector = scale.flatten()
-    mColumn = np.reshape(mVector, (1, 784))
+    scaled = resized / 255
+    flattened = scaled.flatten()
 
-    return np.array(mColumn, dtype=np.float32)
+    return np.reshape(flattened, (1, 784))
 
 def winner(output):
     return max(enumerate(output), key=lambda x: x[1])[0]
@@ -120,7 +131,20 @@ def display_sum(frame, sum_blue, sum_green):
     cv2.putText(frame, str(sum_green), (10, 75), font, 0.8, (0, 255, 0), 1, cv2.LINE_AA)
     cv2.putText(frame, 'Ukupno ' + str(sum_blue-sum_green), (10, 105), font,  0.8, (0, 255, 255), 1, cv2.LINE_AA)
 
-def main(model, video_src, canPause = False):
+def filter_edge_numbers(number):
+    """
+    Pomocna metoda koja pronalazi elemnete koji se nalaze blizu desne ili donje ivice
+    """
+    return not (number.get_bottom_right()[1] > 470 or number.get_bottom_right()[0] > 620)
+
+def draw_tracked_numbers(frame, trackedNumbers):
+    """
+    Pomocna metoda koja iscrtava elemente koji su trenutno praceni
+    """
+    for number in trackedNumbers:
+        cv2.rectangle(frame, number.get_top_left(), number.get_bottom_right(), (0, 255, 0), 1)
+
+def main(model, video_src, debug = False):
     cap = cv2.VideoCapture(video_src)
     
     first_frame = cap.read()[1]
@@ -135,42 +159,56 @@ def main(model, video_src, canPause = False):
         if not ret:
             break
 
-        img_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        img_bin = cv2.threshold(img_gray, 160, 255, cv2.THRESH_BINARY)[1]
+        mask = cv2.inRange(frame, 
+                           np.array([160, 160, 160], dtype="uint8"), 
+                           np.array([255, 255, 255], dtype="uint8"))
+        whiteImage = cv2.bitwise_and(frame, frame, mask = mask)
+        whiteImage = cv2.cvtColor(whiteImage, cv2.COLOR_BGR2GRAY)
+        img_bin = cv2.threshold(whiteImage, 1, 255, cv2.THRESH_BINARY)[1]
 
         update_tracked_numbers(img_bin, trackedNumbers)     
         
         pause = False
 
         for number in trackedNumbers:
-            if not number.passedBlue():
+
+            if not number.passed_blue():
                 if blue_line.has_passed(number):
-                    number.setPassedBlue(True)
+                    number.set_passed_blue(True)
 
                     img_number = prepare_for_ann(img_bin, number)
                     predicted_number = get_prediciton(model, img_number)
-                    display_prediction(frame, predicted_number, number)
+                    if debug: 
+                        display_prediction(frame, predicted_number, number)
                     sum_blue += predicted_number
 
                     pause = True
 
-            if not number.passedGreen():
+            if not number.passed_green():
                 if green_line.has_passed(number):
-                    number.setPassedGreen(True)
+                    number.set_passed_green(True)
 
                     img_number = prepare_for_ann(img_bin, number)
                     predicted_number = get_prediciton(model, img_number)
-                    display_prediction(frame, predicted_number, number)
+                    if debug:
+                        display_prediction(frame, predicted_number, number)
                     sum_green += predicted_number
 
                     pause = True
 
-        # display_sum(frame, sum_blue, sum_green)
-        # draw_lines(frame, [blue_line, green_line])
+        # izbaci elemente koji su blizu desnoj ili donjoj ivici slike
+        trackedNumbers = list(filter(filter_edge_numbers, trackedNumbers))
+   
+        if debug:
+            # prikazi elemente koji su trenutno praceni
+            draw_tracked_numbers(frame, trackedNumbers)        
+            # ispisi trenutnu sumu
+            display_sum(frame, sum_blue, sum_green)
+            # iscrtaj linije
+            draw_lines(frame, [blue_line, green_line])
+            cv2.imshow(video_src, frame)
 
-        cv2.imshow(video_src, frame)
-
-        if pause and canPause:
+        if pause and debug:
             pause = False
             cv2.waitKey(0)
 
@@ -184,4 +222,4 @@ def main(model, video_src, canPause = False):
 
 if __name__ == '__main__':
     model = models.load_model('model3.h5')
-    main(model, 'Video/video-2.avi', True)
+    main(model, 'Video/video-0.avi', True)

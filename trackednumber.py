@@ -1,11 +1,10 @@
 class TrackedNumber:
 
-    __blue = False
-    __green = False
-
     def __init__(self, coords):
       self.__coords = coords
-  
+      self.__blue = False
+      self.__green = False
+
     def update_position(self, coords):
       self.__coords = coords
 
@@ -16,15 +15,15 @@ class TrackedNumber:
     def get_top_left(self):
       return (self.__coords[0], self.__coords[1])
 
-    def setPassedBlue(self, value):
+    def set_passed_blue(self, value):
         self.__blue = value
 
-    def passedBlue(self):
+    def passed_blue(self):
       return self.__blue
 
-    def setPassedGreen(self, value):
+    def set_passed_green(self, value):
         self.__green = value  
 
-    def passedGreen(self):
+    def passed_green(self):
       return self.__green
 

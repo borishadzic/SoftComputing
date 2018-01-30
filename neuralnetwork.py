@@ -43,8 +43,8 @@ model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='
 
 # training the model and saving metrics in history
 history = model.fit(X_train, Y_train,
-                    batch_size=128, epochs=20,
+                    batch_size=512, epochs=10,
                     verbose=2,
                     validation_data=(X_test, Y_test))
 
-model.save('model4.h5')
+model.save('model5.h5')

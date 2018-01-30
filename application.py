@@ -60,7 +60,7 @@ def update_tracked_numbers(img_bin, trackedNumbers):
 def prepare_for_ann(img_bin, number):
     """
     Metoda koja sece deo slike sa binarne slike tako da obuhvati ceo broj.
-    Iseceni deo slike na kojoj se trazeni broj se kasnije pretvara u oblik
+    Iseceni deo slike na kojoj se nalazi trazeni broj se kasnije pretvara u oblik
     pogodan za predikciju u neuronskoj mrezi
     """
     # uzmi koordinate gornjeg levog i donjeg desnog coska konture
@@ -82,10 +82,7 @@ def prepare_for_ann(img_bin, number):
     img_number[:, 0: extra] = 0
     img_number[:, cols-extra: cols] = 0
 
-    img_number = cv2.GaussianBlur(img_number, (3, 3), 1)
-
-    # cv2.imshow('Predicting', img_number)
-    # cv2.waitKey(0)
+    img_number = cv2.GaussianBlur(img_number, (5, 5), 0)
 
     # pretvori ga u oblik pogodan za predikciju u neuronskoj mrezi
     resized = cv2.resize(img_number, (28, 28), interpolation = cv2.INTER_NEAREST)
@@ -94,19 +91,12 @@ def prepare_for_ann(img_bin, number):
 
     return np.reshape(flattened, (1, 784))
 
-def winner(output):
-    return max(enumerate(output), key=lambda x: x[1])[0]
-
-def get_result_from_alphabet(outputs, alphabet):
-    result = []
-    for output in outputs:
-        result.append(alphabet[winner(output)])
-    return result
-
 def get_prediciton(model, img_number):
-    alphabet = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    """
+    Pomocna metoda koja vraca prediktovanu vrednost za prosledjeni broj
+    """
     predicted_result = model.predict(img_number)
-    final_result = get_result_from_alphabet(predicted_result, alphabet)[0]
+    final_result = np.argmax(predicted_result)
 
     return final_result
 
@@ -221,5 +211,5 @@ def main(model, video_src, debug = False):
     return sum_blue - sum_green
 
 if __name__ == '__main__':
-    model = models.load_model('model3.h5')
+    model = models.load_model('model2.h5')
     main(model, 'Video/video-0.avi', True)

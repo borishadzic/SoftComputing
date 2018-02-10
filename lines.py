@@ -65,7 +65,7 @@ def find_all_lines(img):
     se nalaze na slici
     """
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img_bin = cv2.threshold(img_gray, 10, 255, cv2.THRESH_BINARY)[1]
+    img_bin = cv2.threshold(img_gray, 1, 255, cv2.THRESH_BINARY)[1]
 
     img_edges = cv2.Canny(img_bin, 100, 250)
     img_blur = cv2.GaussianBlur(img_edges, (7, 7), 1)

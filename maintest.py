@@ -2,8 +2,8 @@ from application import main
 from keras import models
 
 import winsound
-
-model = models.load_model('model2.h5')
+ 
+model = models.load_model('model.h5')
 student_results = []
 
 for i in range(0, 10):

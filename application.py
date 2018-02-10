@@ -36,7 +36,7 @@ def update_tracked_numbers(img_bin, trackedNumbers):
     U slucaju da prethodni element nije pronadjen, kontura ce biti sacuvana
     kao novi element u listu
     """
-    contours = cv2.findContours(img_bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[1]
+    contours = cv2.findContours(img_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
 
     for contour in contours:
         coords = cv2.boundingRect(contour)
@@ -82,8 +82,7 @@ def prepare_for_ann(img_bin, number):
     img_number[:, 0: extra] = 0
     img_number[:, cols-extra: cols] = 0
 
-    img_number = cv2.GaussianBlur(img_number, (5, 5), 0)
-
+    img_number = cv2.GaussianBlur(img_number, (5, 5), 1)
     # pretvori ga u oblik pogodan za predikciju u neuronskoj mrezi
     resized = cv2.resize(img_number, (28, 28), interpolation = cv2.INTER_NEAREST)
     scaled = resized / 255
@@ -211,5 +210,5 @@ def main(model, video_src, debug = False):
     return sum_blue - sum_green
 
 if __name__ == '__main__':
-    model = models.load_model('model2.h5')
+    model = models.load_model('model.h5')
     main(model, 'Video/video-0.avi', True)
